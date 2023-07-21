@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<main>
+  <section class="container my-5 px-4">
+      <h1>создайте короткую ссылку</h1>
+      <div class="col-12 col-lg-7 my-5">
+        <form method="POST" novalidate>
+          {{ form.csrf_token }}
+          {{ form.original_link(class="form-control form-control-lg py-3 mb-3", placeholder=form.original_link.label.text) }}
+          <p>
+            {% if form.original_link.errors %}
+              {% for error in form.original_link.errors %}
+                <span style="color: red">{{ error }}</span>
+              {% endfor %}
+            {% endif %}
+          </p>
+          {{ form.custom_id(class="form-control form-control-lg py-3 mb-3", placeholder=form.custom_id.label.text) }}
+          <p>
+            {% if form.custom_id.errors %}
+              {% for error in form.custom_id.errors %}
+                <span style="color: red">{{ error }}</span>
+              {% endfor %}
+            {% endif %}
+          </p>
+          {{ form.submit(class="button px-5 py-3 btn btn-success") }}
+        </form>
+      </div>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            <!-- какие-то действия с текстом сообщения -->
+            {{ message }}
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block generated_link %}{% endblock %}
+  </section>
+</main>
+{% endblock %}

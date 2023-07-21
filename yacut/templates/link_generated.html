@@ -1,0 +1,4 @@
+{% extends 'index.html' %}
+{% block generated_link %}
+    Новая ссылка: <a href="{{ url_for('link_redirect_view', short_url=new_short, _external=True) }}">{{ url_for('link_redirect_view', short_url=new_short, _external=True) }}</a>
+{% endblock %}
