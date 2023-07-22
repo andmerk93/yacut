@@ -1,49 +1,65 @@
 from datetime import datetime
-from random import choice
-from string import ascii_letters, digits
+from random import choices
+from re import fullmatch
 
-from yacut import db
+from . import (
+    APPROVED_SYMBOLS,
+    ORIGINAL_LINK_LENGTH,
+    RANDOM_GEN_TRYS,
+    SHORT_LINK_LENGTH,
+    SHORT_LINK_RANDOM_LENGTH,
+    SHORT_LINK_REXEXP,
+    db
+)
 
 
 class URLMap(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    original = db.Column(db.String, unique=True, nullable=False)
-    short = db.Column(db.String(16), unique=True, nullable=False)
+    original = db.Column(
+        db.String(ORIGINAL_LINK_LENGTH), unique=True, nullable=False
+    )
+    short = db.Column(
+        db.String(SHORT_LINK_LENGTH), unique=True, nullable=False
+    )
     timestamp = db.Column(db.DateTime, default=datetime.utcnow())
 
+    @classmethod
+    def get_by_short_link(cls, short_link):
+        return cls.query.filter_by(short=short_link).first()
 
-def short_link_is_ok(short_link):
-    # должно быть 6 <= len...
-    # но тогда не проходят тесты
-    if not (2 <= len(short_link) <= 16):
-        return False
-    for i in set(short_link):
-        if i not in ascii_letters + digits:
-            return False
-    if URLMap.query.filter_by(short=short_link).first():
-        return False
-    return True
+    @classmethod
+    def get_by_original_link(cls, original_link):
+        return cls.query.filter_by(original=original_link).first()
 
+    def short_link_is_ok(self, new_link=None):
+        short_link = self.short
+        if new_link:
+            short_link = new_link
+        if (
+            len(short_link) <= SHORT_LINK_LENGTH and
+            fullmatch(SHORT_LINK_REXEXP, short_link) and
+            not self.get_by_short_link(short_link)
+        ):
+            return True
 
-def db_writer(original_link, short_link):
-    if URLMap.query.filter_by(original=original_link).first():
-        return ('long_url_exists', None)
-    if not short_link_is_ok(short_link):
-        return ('short_url_is_bad', None)
-    link_record = URLMap(
-        original=original_link,
-        short=short_link,
-    )
-    db.session.add(link_record)
-    db.session.commit()
-    return ('OK', link_record)
+    def short_link_generator(self, counter=RANDOM_GEN_TRYS):
+        new_link = ''.join(
+            choices(APPROVED_SYMBOLS, k=SHORT_LINK_RANDOM_LENGTH)
+        )
+        if not self.short_link_is_ok(new_link):
+            counter -= 1
+            new_link = self.short_link_generator(counter)
+        self.short = new_link
 
-
-def short_link_generator():
-    new_link = ''.join(choice(ascii_letters + digits) for _ in range(6))
-    # лучше было бы range(16)
-    # или случайное число 6-16,
-    # но опять не пустили автотесты
-    if not short_link_is_ok(new_link):
-        new_link = short_link_generator()
-    return new_link
+    def db_writer(self, original_link, short_link):
+        self.original = original_link
+        self.short = short_link
+        if self.get_by_original_link(self.original):
+            raise Exception('long_url_exists')
+        if self.short is None or self.short == '':
+            self.short_link_generator()
+        if not self.short_link_is_ok():
+            raise Exception('short_url_is_bad')
+        db.session.add(self)
+        db.session.commit()
+        return self
