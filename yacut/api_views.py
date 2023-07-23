@@ -6,15 +6,9 @@ from .consts import (
     WRONG_SHORT_ID,
     EMPTY_REQUEST_JSON,
     NO_URL_IN_REQUEST_JSON,
-    LONG_URL_ALREADY_EXISTS,
-    WRONG_NAME_FOR_SHORT_URL,
 )
-from .error_handlers import (
-    LongURLExistsException, ShortURLIsBadException, URLMapException
-)
+from .error_handlers import URLMapException
 from .models import URLMap
-
-
 
 
 @app.route('/api/id/<string:short_url>/', methods=['GET'])
@@ -35,12 +29,7 @@ def add_link_api():
     except KeyError:
         raise URLMapException(NO_URL_IN_REQUEST_JSON)
     short_url = data.get('custom_id')
-    try:
-        link_record = URLMap().db_writer(long_url, short_url)
-    except LongURLExistsException:
-        raise URLMapException(LONG_URL_ALREADY_EXISTS.format(short_url))
-    except ShortURLIsBadException:
-        raise URLMapException(WRONG_NAME_FOR_SHORT_URL)
+    link_record = URLMap().db_writer(long_url, short_url)
     return jsonify(dict(
         url=long_url,
         short_link=url_for(
