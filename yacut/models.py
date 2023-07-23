@@ -2,15 +2,16 @@ from datetime import datetime
 from random import choices
 from re import fullmatch
 
-from . import (
+from . import db
+from .consts import (
     APPROVED_SYMBOLS,
     ORIGINAL_LINK_LENGTH,
     RANDOM_GEN_TRYS,
     SHORT_LINK_LENGTH,
     SHORT_LINK_RANDOM_LENGTH,
     SHORT_LINK_REXEXP,
-    db
 )
+from .error_handlers import LongURLExistsException, ShortURLIsBadException
 
 
 class URLMap(db.Model):
@@ -21,45 +22,39 @@ class URLMap(db.Model):
     short = db.Column(
         db.String(SHORT_LINK_LENGTH), unique=True, nullable=False
     )
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    @classmethod
-    def get_by_short_link(cls, short_link):
-        return cls.query.filter_by(short=short_link).first()
+    @staticmethod
+    def get(short_link):
+        return URLMap.query.filter_by(short=short_link).first()
 
-    @classmethod
-    def get_by_original_link(cls, original_link):
-        return cls.query.filter_by(original=original_link).first()
-
-    def short_link_is_ok(self, new_link=None):
-        short_link = self.short
-        if new_link:
-            short_link = new_link
+    def short_link_is_ok(short_link):
         if (
             len(short_link) <= SHORT_LINK_LENGTH and
             fullmatch(SHORT_LINK_REXEXP, short_link) and
-            not self.get_by_short_link(short_link)
+            not URLMap.get(short_link)
         ):
             return True
 
-    def short_link_generator(self, counter=RANDOM_GEN_TRYS):
-        new_link = ''.join(
-            choices(APPROVED_SYMBOLS, k=SHORT_LINK_RANDOM_LENGTH)
-        )
-        if not self.short_link_is_ok(new_link):
+    def short_link_generator(counter=RANDOM_GEN_TRYS):
+        while counter > 0:
+            new_short = ''.join(
+                choices(APPROVED_SYMBOLS, k=SHORT_LINK_RANDOM_LENGTH)
+            )
             counter -= 1
-            new_link = self.short_link_generator(counter)
-        self.short = new_link
+            if URLMap.short_link_is_ok(new_short):
+                break
+        return new_short
 
     def db_writer(self, original_link, short_link):
+        if URLMap.query.filter_by(original=original_link).first():
+            raise LongURLExistsException
+        if short_link is None or short_link == '':
+            short_link = URLMap.short_link_generator()
+        if not URLMap.short_link_is_ok(short_link):
+            raise ShortURLIsBadException
         self.original = original_link
         self.short = short_link
-        if self.get_by_original_link(self.original):
-            raise Exception('long_url_exists')
-        if self.short is None or self.short == '':
-            self.short_link_generator()
-        if not self.short_link_is_ok():
-            raise Exception('short_url_is_bad')
         db.session.add(self)
         db.session.commit()
         return self

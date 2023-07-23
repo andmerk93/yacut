@@ -23,10 +23,12 @@
       </div>
       {% with messages = get_flashed_messages() %}
         {% for message in messages %}
-          {{ message }}
+          <span style="color: red">{{ message }}</span>
         {% endfor %}
       {% endwith %}
-      {% block generated_link %}{% endblock %}
+      {% if full_short_link %}
+        Новая ссылка: <a href="{{ full_short_link }}">{{ full_short_link }}</a>
+      {% endif %}
   </section>
 </main>
 {% endblock %}

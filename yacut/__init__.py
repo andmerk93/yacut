@@ -1,16 +1,9 @@
 from os import getenv
-from string import ascii_letters, digits
 
 from flask import Flask
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
-APPROVED_SYMBOLS = ascii_letters + digits
-ORIGINAL_LINK_LENGTH = 256
-RANDOM_GEN_TRYS = 3
-SHORT_LINK_LENGTH = 16
-SHORT_LINK_RANDOM_LENGTH = 6
-SHORT_LINK_REXEXP = r'[A-Za-z0-9]+'
 
 app = Flask(__name__)
 

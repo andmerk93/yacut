@@ -4,7 +4,7 @@ from wtforms.validators import (
     DataRequired, Length, Optional, Regexp, URL, ValidationError
 )
 
-from . import SHORT_LINK_LENGTH, SHORT_LINK_REXEXP, ORIGINAL_LINK_LENGTH
+from .consts import SHORT_LINK_LENGTH, SHORT_LINK_REXEXP, ORIGINAL_LINK_LENGTH
 from .models import URLMap
 
 FLASH_MESSAGE_FOR_SHORT_LINK = 'Имя {0} уже занято!'
@@ -35,14 +35,7 @@ class URLForm(FlaskForm):
     submit = SubmitField(SUBMIT_TEXT)
 
     def validate_custom_id(form, field):
-        """
-        Валидатор готов, но не подключен,
-        в таком виде не пройдут автотесты,
-        ибо тест проверяет текст в html-странице.
-        Для запуска надо переменовать функцию в
-        validate_custom_id
-        """
-        if URLMap.get_by_short_link(field.data):
+        if URLMap.get(field.data):
             raise ValidationError(
                 FLASH_MESSAGE_FOR_SHORT_LINK.format(field.data)
             )

@@ -1,6 +1,26 @@
-from flask import render_template
+from flask import jsonify, render_template, make_response
 
-from yacut import app, db
+from . import app, db
+
+
+class URLMapException(Exception):
+    pass
+
+
+class LongURLExistsException(URLMapException):
+    pass
+
+
+class ShortURLIsBadException(URLMapException):
+    pass
+
+
+@app.errorhandler(URLMapException)
+def bad_news_teller(error, status=400):
+    message = error.args[0]
+    if len(error.args) == 2:
+        status = error.args[1]
+    return make_response(jsonify(dict(message=message)), status)
 
 
 @app.errorhandler(404)
