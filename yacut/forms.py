@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, URLField
 from wtforms.validators import (
     DataRequired, Length, Optional, Regexp, URL, ValidationError
 )
@@ -16,11 +16,11 @@ SUBMIT_TEXT = 'Добавить'
 
 
 class URLForm(FlaskForm):
-    original_link = StringField(
+    original_link = URLField(
         ORIGINAL_LINK_TEXT,
         validators=[
             DataRequired(message=ORIGINAL_LINK_VALIDATOR),
-            URL(),
+            URL(),  # URLField не делает валидацию
             Length(max=ORIGINAL_LINK_LENGTH)
         ]
     )

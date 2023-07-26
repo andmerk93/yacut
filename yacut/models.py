@@ -5,14 +5,11 @@ from re import fullmatch
 from . import db
 from .consts import (
     APPROVED_SYMBOLS,
-    LONG_URL_ALREADY_EXISTS,
     ORIGINAL_LINK_LENGTH,
-    ORIGINAL_LINK_LENGTH_IS_EXCEED,
     RANDOM_GEN_TRYS,
     SHORT_LINK_LENGTH,
     SHORT_LINK_RANDOM_LENGTH,
     SHORT_LINK_REXEXP,
-    WRONG_NAME_FOR_SHORT_URL,
 )
 from .error_handlers import LongURLExistsException, ShortURLIsBadException
 
@@ -31,35 +28,35 @@ class URLMap(db.Model):
     def get(short_link):
         return URLMap.query.filter_by(short=short_link).first()
 
-    def short_link_is_ok(short_link):
-        if (
-            len(short_link) <= SHORT_LINK_LENGTH and
-            fullmatch(SHORT_LINK_REXEXP, short_link) and
-            not URLMap.get(short_link)
-        ):
-            return True
+    def validator(original_link, short):
+        if len(original_link) > ORIGINAL_LINK_LENGTH:
+            raise LongURLExistsException
+        if len(short) > SHORT_LINK_LENGTH:
+            raise ShortURLIsBadException
+        if not fullmatch(SHORT_LINK_REXEXP, short):
+            raise ShortURLIsBadException
+        if URLMap.get(short):
+            raise ShortURLIsBadException
+        return short
 
     def short_link_generator(counter=RANDOM_GEN_TRYS):
-        while counter > 0:
+        for _ in range(counter):
             new_short = ''.join(
                 choices(APPROVED_SYMBOLS, k=SHORT_LINK_RANDOM_LENGTH)
             )
-            counter -= 1
-            if URLMap.short_link_is_ok(new_short):
-                break
-        return new_short
+            if URLMap.get(new_short):
+                pass
+            else:
+                return new_short
+        raise ShortURLIsBadException
 
-    def db_writer(self, original_link, short_link, called_from_form=False):
-        if len(original_link) > ORIGINAL_LINK_LENGTH:
-            raise LongURLExistsException(ORIGINAL_LINK_LENGTH_IS_EXCEED)
+    def db_writer(self, original_link, short_link, do_validate=False):
         if URLMap.query.filter_by(original=original_link).first():
-            raise LongURLExistsException(
-                LONG_URL_ALREADY_EXISTS.format(short_link)
-            )
+            raise LongURLExistsException
         if short_link is None or short_link == '':
             short_link = URLMap.short_link_generator()
-        if not (called_from_form or URLMap.short_link_is_ok(short_link)):
-            raise ShortURLIsBadException(WRONG_NAME_FOR_SHORT_URL)
+        elif do_validate:
+            URLMap.validator(original_link, short_link)
         self.original = original_link
         self.short = short_link
         db.session.add(self)
