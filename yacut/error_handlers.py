@@ -19,7 +19,7 @@ class ShortIsExistsException(URLMapException):
     pass
 
 
-class GeneratedShortIsBadException(URLMapException):
+class GeneratedShortException(ShortIsBadException):
     pass
 
 

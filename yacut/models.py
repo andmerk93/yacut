@@ -12,7 +12,7 @@ from .consts import (
     SHORT_REXEXP,
 )
 from .error_handlers import (
-    GeneratedShortIsBadException,
+    GeneratedShortException,
     LongURLIsBadException,
     ShortIsBadException,
     ShortIsExistsException
@@ -59,7 +59,7 @@ class URLMap(db.Model):
             )
             if not URLMap.get(new_short):
                 return new_short
-        raise GeneratedShortIsBadException(GENERATING_IS_FALLED)
+        raise GeneratedShortException(GENERATING_IS_FALLED)
 
     @staticmethod
     def db_writer(original_link, short, do_validate=False):
@@ -69,10 +69,10 @@ class URLMap(db.Model):
             short = URLMap.short_link_generator()
         elif do_validate:
             URLMap.short_validator(short)
-        urlmap = URLMap(
+        url_map = URLMap(
             original=original_link,
             short=short
         )
-        db.session.add(urlmap)
+        db.session.add(url_map)
         db.session.commit()
-        return urlmap
+        return url_map
