@@ -7,7 +7,7 @@ class URLMapException(Exception):
     pass
 
 
-class LongURLExistsException(URLMapException):
+class LongURLIsBadException(URLMapException):
     pass
 
 

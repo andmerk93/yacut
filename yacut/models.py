@@ -11,7 +11,15 @@ from .consts import (
     SHORT_LINK_RANDOM_LENGTH,
     SHORT_LINK_REXEXP,
 )
-from .error_handlers import LongURLExistsException, ShortURLIsBadException
+from .error_handlers import LongURLIsBadException, ShortURLIsBadException
+
+
+GENERATING_IS_FALLED = 'Генерация имени не удалась'
+SHORT_DOESNT_SUITE_REGEXP = 'Не соответствует разрешенным символам'
+SHORT_IS_EXISTS = 'Такое имя уже существует'
+WRONG_LENGTH_IN_SHORT = 'Не соответствует разрешенной длине'
+ORIGINAL_LINK_IS_EXISTS = 'Такая ссылка уже есть в базе'
+ORIGINAL_LINK_IS_BIG = 'Ссылка первышает допустимый размер'
 
 
 class URLMap(db.Model):
@@ -28,37 +36,40 @@ class URLMap(db.Model):
     def get(short_link):
         return URLMap.query.filter_by(short=short_link).first()
 
-    def validator(original_link, short):
-        if len(original_link) > ORIGINAL_LINK_LENGTH:
-            raise LongURLExistsException
+    @staticmethod
+    def short_validator(short):
         if len(short) > SHORT_LINK_LENGTH:
-            raise ShortURLIsBadException
+            raise ShortURLIsBadException(WRONG_LENGTH_IN_SHORT)
         if not fullmatch(SHORT_LINK_REXEXP, short):
-            raise ShortURLIsBadException
+            raise ShortURLIsBadException(SHORT_DOESNT_SUITE_REGEXP)
         if URLMap.get(short):
-            raise ShortURLIsBadException
+            raise ShortURLIsBadException(SHORT_IS_EXISTS)
         return short
 
+    @staticmethod
     def short_link_generator(counter=RANDOM_GEN_TRYS):
         for _ in range(counter):
             new_short = ''.join(
                 choices(APPROVED_SYMBOLS, k=SHORT_LINK_RANDOM_LENGTH)
             )
-            if URLMap.get(new_short):
-                pass
-            else:
+            if not URLMap.get(new_short):
                 return new_short
-        raise ShortURLIsBadException
+        raise ShortURLIsBadException(GENERATING_IS_FALLED)
 
-    def db_writer(self, original_link, short_link, do_validate=False):
+    @staticmethod
+    def db_writer(original_link, short_link, do_validate=False):
+        if do_validate and (len(original_link) > ORIGINAL_LINK_LENGTH):
+            raise LongURLIsBadException(ORIGINAL_LINK_IS_BIG)
         if URLMap.query.filter_by(original=original_link).first():
-            raise LongURLExistsException
+            raise LongURLIsBadException(ORIGINAL_LINK_IS_EXISTS)
         if short_link is None or short_link == '':
             short_link = URLMap.short_link_generator()
         elif do_validate:
-            URLMap.validator(original_link, short_link)
-        self.original = original_link
-        self.short = short_link
-        db.session.add(self)
+            URLMap.short_validator(short_link)
+        urlmap = URLMap(
+            original=original_link,
+            short=short_link
+        )
+        db.session.add(urlmap)
         db.session.commit()
-        return self
+        return urlmap
