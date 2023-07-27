@@ -11,7 +11,15 @@ class LongURLIsBadException(URLMapException):
     pass
 
 
-class ShortURLIsBadException(URLMapException):
+class ShortIsBadException(URLMapException):
+    pass
+
+
+class ShortIsExistsException(URLMapException):
+    pass
+
+
+class GeneratedShortIsBadException(URLMapException):
     pass
 
 

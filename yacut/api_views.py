@@ -1,15 +1,15 @@
 from flask import jsonify, request, url_for
 
 from . import app
-from .consts import SHORT_LINK_FUNCTION_NAME
+from .consts import SHORT_FUNCTION_NAME
 from .error_handlers import (
-    LongURLIsBadException, ShortURLIsBadException, URLMapException
+    ShortIsBadException, ShortIsExistsException, URLMapException
 )
 from .models import URLMap
 
 
 EMPTY_REQUEST_JSON = 'Отсутствует тело запроса'
-LONG_URL_ALREADY_EXISTS = 'Имя "{0}" уже занято.'
+SHORT_ALREADY_EXISTS = 'Имя "{0}" уже занято.'
 NO_URL_IN_REQUEST_JSON = '"url" является обязательным полем!'
 WRONG_NAME_FOR_SHORT_URL = 'Указано недопустимое имя для короткой ссылки'
 WRONG_SHORT_ID = 'Указанный id не найден'
@@ -35,14 +35,14 @@ def add_link_api():
     short = data.get('custom_id')
     try:
         link_record = URLMap().db_writer(long_url, short, do_validate=True)
-    except LongURLIsBadException:
-        raise URLMapException(LONG_URL_ALREADY_EXISTS.format(short))
-    except ShortURLIsBadException:
+    except ShortIsExistsException:
+        raise URLMapException(SHORT_ALREADY_EXISTS.format(short))
+    except ShortIsBadException:
         raise URLMapException(WRONG_NAME_FOR_SHORT_URL)
     return jsonify(dict(
         url=long_url,
         short_link=url_for(
-            SHORT_LINK_FUNCTION_NAME,
+            SHORT_FUNCTION_NAME,
             short_url=link_record.short,
             _external=True
         ),
