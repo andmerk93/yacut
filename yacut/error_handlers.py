@@ -7,10 +7,7 @@ SERVER_ERROR_TEXT = 'Ошибка сервера'
 
 
 class URLMapException(Exception):
-
-    def __init__(self, message, status_code=None):
-        self.message = message
-        self.status_code = status_code if status_code else 400
+    pass
 
 
 class ShortIsBadException(URLMapException):
@@ -25,7 +22,14 @@ class GeneratedShortException(URLMapException):
     pass
 
 
-@app.errorhandler(URLMapException)
+class APIException(Exception):
+
+    def __init__(self, message, status_code=None):
+        self.message = message
+        self.status_code = status_code if status_code else 400
+
+
+@app.errorhandler(APIException)
 def bad_news_teller(error):
     return jsonify(dict(message=error.message)), error.status_code
 
