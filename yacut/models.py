@@ -13,9 +13,9 @@ from .consts import (
 )
 from .error_handlers import (
     GeneratedShortException,
-    LongURLIsBadException,
     ShortIsBadException,
-    ShortIsExistsException
+    ShortIsExistsException,
+    URLMapException
 )
 
 
@@ -64,7 +64,7 @@ class URLMap(db.Model):
     @staticmethod
     def db_writer(original_link, short, do_validate=False):
         if do_validate and (len(original_link) > ORIGINAL_LINK_LENGTH):
-            raise LongURLIsBadException(ORIGINAL_LINK_IS_BIG)
+            raise URLMapException(ORIGINAL_LINK_IS_BIG)
         if short is None or short == '':
             short = URLMap.short_link_generator()
         elif do_validate:
