@@ -3,11 +3,15 @@ from flask import jsonify, request, url_for
 from . import app
 from .consts import SHORT_FUNCTION_NAME
 from .error_handlers import (
-    APIException, ShortIsBadException, ShortIsExistsException
+    APIException,
+    GeneratedShortException,
+    ShortIsBadException,
+    ShortIsExistsException
 )
 from .models import URLMap
 
 
+GENERATED_SHORT_ERROR = 'Ошибка генерации имени, повторите попытку'
 EMPTY_REQUEST_JSON = 'Отсутствует тело запроса'
 SHORT_ALREADY_EXISTS = 'Имя "{0}" уже занято.'
 NO_URL_IN_REQUEST_JSON = '"url" является обязательным полем!'
@@ -39,6 +43,8 @@ def add_link_api():
         raise APIException(SHORT_ALREADY_EXISTS.format(short))
     except ShortIsBadException:
         raise APIException(WRONG_NAME_FOR_SHORT_URL)
+    except GeneratedShortException:
+        raise APIException(GENERATED_SHORT_ERROR)
     return jsonify(dict(
         url=long_url,
         short_link=url_for(
